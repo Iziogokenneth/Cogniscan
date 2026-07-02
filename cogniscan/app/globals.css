@@ -1,0 +1,28 @@
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+}
+
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: #e2e8f0;
+  --accent: #5c54f2;
+  --accent2: #818cf8;
+  --text: #0f172a;
+  --muted: #64748b;
+  --low: #10b981;
+  --med: #f59e0b;
+  --high: #ef4444;
+}
+
+body { 
+  background: var(--bg); 
+  font-family: var(--font-dm-sans), sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, [class*="logo"], [class*="heroTitle"], [class*="scanBtn"], [class*="resultTitle"], [class*="featureTitle"] {
+  font-family: var(--font-syne), sans-serif;
+}
