@@ -1,0 +1,20 @@
+# Environment secrets — never commit these
+.env
+.env.*
+cogniscan-backend/.env
+cogniscan-backend/.env.*
+
+# Python virtual environment
+.venv/
+cogniscan-backend/.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Playwright browser binaries (large, downloaded at build time)
+cogniscan-backend/.playwright/
+
+# macOS
+.DS_Store

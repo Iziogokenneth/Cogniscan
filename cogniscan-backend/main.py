@@ -32,13 +32,19 @@ app = FastAPI(
 )
 
 # ── CORS — allows Next.js frontend to talk to this backend ────────────────────
+# Allow all origins in production so any Vercel/custom domain can connect.
+# Narrow this down to your specific Vercel URL once deployed, e.g.:
+#   allow_origins=["https://your-app.vercel.app"]
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ── Response model ────────────────────────────────────────────────────────────
 class Issue(BaseModel):
@@ -132,6 +138,52 @@ async def take_screenshot(url: str) -> bytes:
         screenshot = await loop.run_in_executor(pool, _take_screenshot_sync, url)
     return screenshot
 
+# ── Helper: generate mock analysis on API key failure ─────────────────────────
+def generate_mock_analysis() -> AnalysisResult:
+    import random
+    score = random.randint(3, 8)
+    if score <= 3:
+        label = "Low Cognitive Load"
+        cls = "low"
+        readability = "Good"
+    elif score <= 6:
+        label = "Moderate Cognitive Load"
+        cls = "med"
+        readability = "Fair"
+    else:
+        label = "High Cognitive Load"
+        cls = "high"
+        readability = "Poor"
+        
+    return AnalysisResult(
+        score=score,
+        label=label,
+        cls=cls,
+        elements=str(random.randint(15, 60)),
+        contrast=f"{random.randint(0, 4)} fails",
+        readability=readability,
+        issues=[
+            Issue(
+                sev="high" if score > 6 else "med",
+                icon="🔴" if score > 6 else "🟡",
+                title="Cluttered Layout Structure" if score > 6 else "Slight Spacing Issues",
+                desc="Multiple navigation links and competing cards are present on the screen."
+            ),
+            Issue(
+                sev="low",
+                icon="🟢",
+                title="Contrast Warning",
+                desc="Some text elements have contrast ratios slightly below WCAG 2.2 recommendations."
+            )
+        ],
+        recs=[
+            "Reduce the number of competing visual cards in the main view.",
+            "Increase font size of secondary text labels to improve readability.",
+            "Ensure contrast ratio of body text is at least 4.5:1."
+        ],
+        source="Mock Analysis (API Key Invalid)"
+    )
+
 # ── Helper: analyze screenshot with Groq Llama-4-Scout ─────────────────────────
 async def analyze_with_groq(image_base64: str) -> AnalysisResult:
     try:
@@ -187,6 +239,11 @@ async def analyze_with_groq(image_base64: str) -> AnalysisResult:
         )
 
     except Exception as e:
+        err_str = str(e).lower()
+        if "invalid api key" in err_str or "authentication" in err_str or "401" in err_str:
+            print("WARNING: Groq API Key is invalid or expired. Falling back to mock analysis.")
+            return generate_mock_analysis()
+
         import traceback
         raise HTTPException(
             status_code=500,
